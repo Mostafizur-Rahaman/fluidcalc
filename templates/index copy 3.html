@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FluidCalc — State Properties</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════
+   TOKENS — DARK (default)
+═══════════════════════════════════ */
+:root {
+  --bg0:     #080b11;
+  --bg1:     #0d1117;
+  --bg2:     #141c26;
+  --bg3:     #1b2535;
+  --bg4:     #21304a;
+  --border:  rgba(255,255,255,0.055);
+  --border2: rgba(255,255,255,0.10);
+  --border3: rgba(255,255,255,0.18);
+
+  --accent:   #4e9eff;
+  --accent2:  #2c7ee0;
+  --accent-s: rgba(78,158,255,0.12);
+  --accent-b: rgba(78,158,255,0.22);
+
+  --emerald:  #10d9a0;
+  --emerald-s:rgba(16,217,160,0.12);
+  --violet:   #a78bfa;
+  --violet-s: rgba(167,139,250,0.12);
+  --amber:    #fbbf24;
+  --amber-s:  rgba(251,191,36,0.12);
+  --rose:     #fb7185;
+  --rose-s:   rgba(251,113,133,0.12);
+  --sky:      #38bdf8;
+  --sky-s:    rgba(56,189,248,0.12);
+
+  --text1: #e8edf5;
+  --text2: #8fa3c0;
+  --text3: #4e627a;
+
+  --radius:    10px;
+  --radius-sm: 7px;
+  --tr:        0.16s ease;
+
+  --font: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ═══════════════════════════════════
+   LIGHT THEME
+═══════════════════════════════════ */
+[data-theme="light"] {
+  --bg0:     #f0f4fa;
+  --bg1:     #ffffff;
+  --bg2:     #f5f8fe;
+  --bg3:     #edf1f9;
+  --bg4:     #e4eaf5;
+  --border:  rgba(0,0,0,0.06);
+  --border2: rgba(0,0,0,0.10);
+  --border3: rgba(0,0,0,0.18);
+
+  --accent:   #2563eb;
+  --accent2:  #1d4ed8;
+  --accent-s: rgba(37,99,235,0.08);
+  --accent-b: rgba(37,99,235,0.18);
+
+  --emerald:  #059669;
+  --emerald-s:rgba(5,150,105,0.08);
+  --violet:   #7c3aed;
+  --violet-s: rgba(124,58,237,0.08);
+  --amber:    #d97706;
+  --amber-s:  rgba(217,119,6,0.08);
+  --rose:     #e11d48;
+  --rose-s:   rgba(225,29,72,0.08);
+  --sky:      #0284c7;
+  --sky-s:    rgba(2,132,199,0.08);
+
+  --text1: #0f172a;
+  --text2: #475569;
+  --text3: #94a3b8;
+}
+
+/* ═══════════════════════════════════
+   RESET
+═══════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: var(--font);
+  background: var(--bg0);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px 12px 40px;
+  transition: background var(--tr), color var(--tr);
+  color: var(--text1);
+}
+
+/* ═══════════════════════════════════
+   TOP BAR
+═══════════════════════════════════ */
+.topbar {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.brand {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600; color: var(--text1); letter-spacing: -0.02em;
+}
+.brand-dot {
+  width: 24px; height: 24px;
+  background: linear-gradient(135deg, var(--accent), var(--emerald));
+  border-radius: 7px;
+  display: grid; place-items: center;
+  font-size: 9px; color: #fff; font-weight: 600;
+}
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* theme toggle */
+.tpill {
+  display: flex;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: 30px; padding: 3px;
+  cursor: pointer;
+}
+.topt {
+  display: flex; align-items: center; gap: 3px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 10px; font-weight: 500; color: var(--text3);
+  cursor: pointer; transition: all var(--tr); user-select: none;
+}
+.topt svg { width: 10px; height: 10px; }
+.topt.active { background: var(--bg1); color: var(--accent); }
+
+/* ═══════════════════════════════════
+   MAIN PANEL
+═══════════════════════════════════ */
+.panel {
+  width: 100%; max-width: 460px;
+  background: var(--bg1);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 48px -8px rgba(0,0,0,0.55), 0 0 0 1px var(--border);
+}
+
+/* ═══════════════════════════════════
+   SECTION
+═══════════════════════════════════ */
+.sec { border-bottom: 1px solid var(--border); }
+.sec:last-child { border-bottom: none; }
+.sec-hd {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+}
+.sec-icon {
+  width: 20px; height: 20px; border-radius: 6px;
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.sec-title {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text2);
+}
+.sec-bd { padding: 14px 16px; }
+
+/* ═══════════════════════════════════
+   FLUID SELECTOR
+═══════════════════════════════════ */
+.fluid-sel {
+  width: 100%;
+  padding: 10px 34px 10px 12px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text1);
+  font-family: var(--font);
+  font-size: 13px; font-weight: 500;
+  outline: none; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238fa3c0' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color var(--tr), box-shadow var(--tr);
+}
+.fluid-sel:hover { border-color: var(--accent); }
+.fluid-sel:focus { border-color: var(--accent); box-shadow: 0 0 0 2.5px var(--accent-b); }
+.fluid-sel option { background: var(--bg2); color: var(--text1); }
+
+/* ═══════════════════════════════════
+   UNIFIED INPUT ROW
+═══════════════════════════════════ */
+.irow {
+  display: grid;
+  grid-template-columns: 5fr 1px 3fr 1px 3fr;
+  align-items: stretch;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  height: 44px;
+  margin-bottom: 10px;
+  transition: border-color var(--tr), box-shadow var(--tr);
+}
+.irow:last-of-type { margin-bottom: 0; }
+.irow:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2.5px var(--accent-b);
+}
+.irow-div {
+  width: 1px;
+  background: var(--border2);
+  align-self: stretch;
+}
+
+/* left: property select or static label */
+.irow-left {
+  display: flex; align-items: center;
+  padding: 0 6px 0 12px;
+  min-width: 0;
+}
+.irow-left select {
+  width: 100%; border: none; background: transparent;
+  color: var(--text1); font-family: var(--font);
+  font-size: 12px; font-weight: 500;
+  outline: none; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' fill='none'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%238fa3c0' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  padding-right: 16px;
+}
+.irow-left select { padding-left: 6px; text-indent: 2px; }
+.irow-left select option { background: var(--bg2); color: var(--text1); padding: 6px 10px 6px 14px; }
+.static-lbl {
+  font-size: 13px; font-weight: 600;
+  color: var(--text2); letter-spacing: 0.02em;
+}
+
+/* center: number input */
+.irow-val {
+  width: 100%; height: 100%;
+  background: transparent; border: none; outline: none;
+  font-family: var(--font); font-size: 14px; font-weight: 500;
+  color: var(--text1); text-align: right;
+  padding: 0 8px;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.irow-val::-webkit-inner-spin-button,
+.irow-val::-webkit-outer-spin-button { display: none; }
+
+/* right: unit select */
+.irow-unit {
+  width: 100%; height: 100%;
+  background: transparent; border: none; outline: none;
+  font-family: var(--font); font-size: 11px; font-weight: 500;
+  color: var(--accent);
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='4' fill='none'%3E%3Cpath d='M1 1l2.5 2.5L6 1' stroke='%234e9eff' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  padding: 0 20px 0 8px;
+}
+.irow-unit option { background: var(--bg2); color: var(--text1); }
+#refBasis option { background: var(--bg2); color: var(--text1); }
+
+/* converted hint */
+.conv-hint {
+  font-size: 10px; color: var(--text3);
+  margin-top: 4px; text-align: right;
+  min-height: 13px; padding-right: 2px;
+  transition: color var(--tr);
+}
+.conv-hint.live { color: var(--accent); opacity: 0.75; }
+
+/* ═══════════════════════════════════
+   CALCULATE BUTTON
+═══════════════════════════════════ */
+.calc-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(140deg, var(--accent2) 0%, #1a56c4 100%);
+  color: #fff; font-family: var(--font);
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  transition: all var(--tr);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.calc-btn:hover { background: var(--accent); box-shadow: 0 4px 16px rgba(78,158,255,0.35); transform: translateY(-1px); }
+.calc-btn:active { transform: scale(0.99); opacity: 0.92; }
+.calc-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+/* ═══════════════════════════════════
+   RESULTS SECTION
+═══════════════════════════════════ */
+.results-sec { display: none; }
+.results-sec.visible { display: block; }
+
+/* Phase badge */
+.phase-row {
+  padding: 12px 16px 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.phase-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 13px;
+  border-radius: 30px;
+  font-size: 11px; font-weight: 500;
+}
+.phase-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* ═══════════════════════════════════
+   PROPERTY TABLE — results & constants
+═══════════════════════════════════ */
+.prop-wrap {
+  padding: 10px 0 4px;
+}
+
+.prop-header {
+  display: grid;
+  grid-template-columns: 2.2fr 1.4fr 0.9fr;
+  padding: 5px 16px 5px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 2px;
+}
+.prop-header span:nth-child(2) { text-align: right; }
+.prop-header span:nth-child(3) { text-align: right; padding-right: 2px; }
+
+.prop-row {
+  display: grid;
+  grid-template-columns: 2.2fr 1.4fr 0.9fr;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--tr);
+  cursor: default;
+}
+.prop-row:last-child { border-bottom: none; }
+.prop-row:hover { background: var(--bg3); }
+
+/* divider row between groups */
+.prop-divider {
+  height: 1px;
+  background: var(--border2);
+  margin: 4px 16px;
+}
+
+/* highlighted rows */
+.prop-row.hi-blue   { background: var(--accent-s); }
+.prop-row.hi-blue:hover { filter: brightness(1.06); }
+.prop-row.hi-blue   .prop-val { color: var(--accent); }
+.prop-row.hi-blue   .prop-unit { color: var(--accent); opacity: 1; }
+
+.prop-row.hi-emerald { background: var(--emerald-s); }
+.prop-row.hi-emerald:hover { filter: brightness(1.06); }
+.prop-row.hi-emerald .prop-val { color: var(--emerald); }
+.prop-row.hi-emerald .prop-unit { color: var(--emerald); opacity: 1; }
+.prop-row.hi-emerald .prop-name { color: var(--emerald); opacity: 0.8; }
+
+.prop-name {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prop-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text1);
+  text-align: right;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.prop-val.na { color: var(--text3); font-size: 12px; font-weight: 400; }
+.prop-unit {
+  font-size: 10px;
+  color: var(--accent);
+  text-align: right;
+  padding-left: 6px;
+  opacity: 0.72;
+  white-space: nowrap;
+}
+
+/* loading skeleton rows */
+.sk {
+  display: inline-block; border-radius: 4px;
+  background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+  background-size: 200% 100%;
+  animation: shim 1.2s infinite;
+}
+@keyframes shim { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ═══════════════════════════════════
+   COLLAPSIBLE — FLUID CONSTANTS
+═══════════════════════════════════ */
+.collapse-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--bg2);
+  cursor: pointer; user-select: none;
+  transition: background var(--tr);
+}
+.collapse-hd:hover { background: var(--bg3); }
+.collapse-hd .hd-left { display: flex; align-items: center; gap: 8px; }
+.collapse-opt { font-size: 10px; color: var(--text3); }
+.chevron { color: var(--text3); transition: transform 0.2s; }
+.chevron.open { transform: rotate(180deg); color: var(--accent); }
+.collapse-bd { display: none; }
+.collapse-bd.open { display: block; }
+
+/* error */
+.err-box {
+  margin: 0 16px 12px;
+  padding: 10px 14px;
+  background: var(--rose-s);
+  border: 1px solid color-mix(in srgb, var(--rose) 30%, transparent);
+  border-radius: var(--radius-sm);
+  font-size: 11px; color: var(--rose);
+  display: none;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-dot">Fc</div>
+    FluidCalc
+  </div>
+  <div class="topbar-right">
+    <div class="tpill">
+      <div class="topt active" id="btnDark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/>
+        </svg>Dark
+      </div>
+      <div class="topt" id="btnLight">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>Light
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN PANEL -->
+<div class="panel">
+
+  <!-- WORKING FLUID -->
+  <div class="sec">
+    <div class="sec-hd">
+      <div class="sec-icon" style="background:linear-gradient(135deg,#4e9eff,#10d9a0)">
+        <svg viewBox="0 0 10 12" width="11" height="11" fill="white">
+          <path d="M5 0C3 3 1 5.5 1 7.5a4 4 0 008 0C9 5.5 7 3 5 0z"/>
+        </svg>
+      </div>
+      <span class="sec-title">Working Fluid</span>
+    </div>
+    <div class="sec-bd">
+      <select class="fluid-sel" id="fluidSel"></select>
+    </div>
+  </div>
+
+  <!-- STATE INPUTS -->
+  <div class="sec">
+    <div class="sec-hd">
+      <div class="sec-icon" style="background:linear-gradient(135deg,#fbbf24,#f97316)">
+        <svg viewBox="0 0 10 10" width="11" height="11" fill="white">
+          <rect x="1.5" y="1.5" width="7" height="7" rx="2"/>
+        </svg>
+      </div>
+      <span class="sec-title">State Inputs</span>
+    </div>
+    <div class="sec-bd">
+      <!-- Input 2 -->
+      <div class="irow" style="margin-top:8px">
+        <div class="irow-left">
+          <select id="prop2" onchange="onProp(2)">
+            <option value="P">Pressure, P</option>
+            <option value="T">Temperature, T</option>
+            <option value="H">Enthalpy, H</option>
+            <option value="S">Entropy, S</option>
+            <option value="Q">Vapor Quality, Q</option>
+            <option value="D">Density, D</option>
+          </select>
+        </div>
+        <div class="irow-div"></div>
+        <input id="val2" type="number" class="irow-val" value="1" step="any" oninput="conv(2)"/>
+        <div class="irow-div"></div>
+        <select id="unit2" class="irow-unit" onchange="conv(2)"></select>
+      </div>
+      <div class="conv-hint" id="hint2" style="display: none;"></div>
+
+      <!-- Input 1 -->
+      <div class="irow">
+        <div class="irow-left">
+          <select id="prop1" onchange="onProp(1)">
+            <option value="T">Temperature, T</option>
+            <option value="P">Pressure, P</option>
+            <option value="H">Enthalpy, H</option>
+            <option value="S">Entropy, S</option>
+            <option value="Q">Vapor Quality, Q</option>
+            <option value="D">Density, D</option>
+          </select>
+        </div>
+        <div class="irow-div"></div>
+        <input id="val1" type="number" class="irow-val" value="25" step="any" oninput="conv(1)"/>
+        <div class="irow-div"></div>
+        <select id="unit1" class="irow-unit" onchange="conv(1)"></select>
+      </div>
+      <div class="conv-hint" id="hint1" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- REFERENCE STATE -->
+  <div class="sec">
+    <div class="sec-hd">
+      <div class="sec-icon" style="background:linear-gradient(135deg,#10d9a0,#06b6d4)">
+        <svg viewBox="0 0 10 10" width="11" height="11" fill="white">
+          <circle cx="5" cy="5" r="2" fill="rgba(0,0,0,0.4)"/>
+          <circle cx="5" cy="5" r="4" stroke="white" stroke-width="1.5" fill="none"/>
+        </svg>
+      </div>
+      <span class="sec-title">Reference State</span>
+    </div>
+    <div class="sec-bd">
+      <!-- P₀ -->
+      <div class="irow" style="margin-top:8px">
+        <div class="irow-left"><span class="static-lbl">Pressure, P₀</span></div>
+        <div class="irow-div"></div>
+        <input id="P0val" type="number" class="irow-val" value="1" step="any" oninput="refHint('P')"/>
+        <div class="irow-div"></div>
+        <select id="P0unit" class="irow-unit" onchange="refHint('P')">
+          <option value="atm">atm</option>
+          <option value="bar">bar</option>
+          <option value="Pa">Pa</option>
+          <option value="kPa">kPa</option>
+          <option value="MPa">MPa</option>
+          <option value="psi">psi</option>
+        </select>
+      </div>
+      <div class="conv-hint" id="P0hint" style="display: none;">≡ 101325 Pa</div>
+
+      <!-- T₀ -->
+      <div class="irow">
+        <div class="irow-left"><span class="static-lbl">Temperature, T₀</span></div>
+        <div class="irow-div"></div>
+        <input id="T0val" type="number" class="irow-val" value="15" step="any" oninput="refHint('T')"/>
+        <div class="irow-div"></div>
+        <select id="T0unit" class="irow-unit" onchange="refHint('T')">
+          <option value="C">°C</option>
+          <option value="K">K</option>
+          <option value="F">°F</option>
+        </select>
+      </div>
+      <div class="conv-hint" id="T0hint" style="display: none;">≡ 288.15 K</div>
+
+      <!-- h/s ref -->
+      <div class="irow" style="margin-top:8px">
+        <div class="irow-left"><span class="static-lbl">Reference</span></div>
+        <div class="irow-div"></div>
+        <select id="refBasis" style="grid-column:3/6;width:100%;height:100%;background:transparent;border:none;outline:none;font-family:var(--font);font-size:11px;font-weight:500;color:var(--text1);cursor:pointer;padding:0 8px;appearance:none;-webkit-appearance:none">
+          <option value="DEF">DEF — Default</option>
+          <option value="IIR">IIR — 0°C sat. liq.</option>
+          <option value="ASHRAE">ASHRAE — −40°C sat. liq.</option>
+          <option value="NBP">NBP — boiling point</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALCULATE -->
+  <button class="calc-btn" id="calcBtn" disabled onclick="calculate()">
+    <svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="white" stroke-width="1.8">
+      <polygon points="3,2 11,7 3,12"/>
+    </svg>
+    Calculate State
+  </button>
+
+  <!-- ERROR -->
+  <div class="err-box" id="errBox"></div>
+
+  <!-- RESULTS -->
+  <div class="results-sec" id="resultsSec">
+    <div class="phase-row">
+      <div class="phase-badge" id="phaseBadge">
+        <div class="phase-dot" id="phaseDot"></div>
+        <span id="phaseLabel">—</span>
+      </div>
+    </div>
+    <!-- property table rendered here -->
+    <div id="propTableWrap"></div>
+  </div>
+
+  <!-- FLUID CONSTANTS — collapsible -->
+  <div class="sec" style="border-bottom:none">
+    <div class="collapse-hd" onclick="toggleGen()">
+      <div class="hd-left">
+        <span class="sec-title">Fluid Constants</span>
+        <span class="collapse-opt">· optional</span>
+      </div>
+      <svg class="chevron" id="chevron" viewBox="0 0 12 8" width="12" height="8" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M1 1l5 5 5-5"/>
+      </svg>
+    </div>
+    <div class="collapse-bd" id="genBd">
+      <div id="constTableWrap"></div>
+    </div>
+  </div>
+
+</div><!-- /panel -->
+
+<script>
+/* ══════════════════════════════════
+   UNIT MAP  (inputs — unchanged)
+══════════════════════════════════ */
+const UM = {
+  T: { opts:['°C','K','°F'], def:'°C', defVal:25,
+       si:{'°C':v=>v+273.15,'K':v=>v,'°F':v=>(v-32)*5/9+273.15}, label:'K' },
+  P: { opts:['atm','bar','MPa','kPa','Pa','psi'], def:'atm', defVal:1,
+       si:{'atm':v=>v*101325,'bar':v=>v*1e5,'MPa':v=>v*1e6,'kPa':v=>v*1e3,'Pa':v=>v,'psi':v=>v*6894.757}, label:'Pa' },
+  H: { opts:['kJ/kg','J/kg'], def:'kJ/kg', defVal:100,
+       si:{'kJ/kg':v=>v*1e3,'J/kg':v=>v}, label:'J/kg' },
+  S: { opts:['kJ/kg·K','J/kg·K'], def:'kJ/kg·K', defVal:0.5,
+       si:{'kJ/kg·K':v=>v*1e3,'J/kg·K':v=>v}, label:'J/kg·K' },
+  Q: { opts:['—'], def:'—', defVal:0.5, si:{'—':v=>v}, label:'—' },
+  D: { opts:['kg/m³','g/L','g/cm³'], def:'kg/m³', defVal:1000,
+       si:{'kg/m³':v=>v,'g/L':v=>v,'g/cm³':v=>v*1e3}, label:'kg/m³' },
+};
+const RT = {'C':v=>v+273.15,'K':v=>v,'F':v=>(v-32)*5/9+273.15};
+const RP = {'atm':v=>v*101325,'bar':v=>v*1e5,'Pa':v=>v,'kPa':v=>v*1e3,'MPa':v=>v*1e6,'psi':v=>v*6894.757};
+
+function fillUnits(n, prop){
+  const m   = UM[prop];
+  const sel = document.getElementById('unit'+n);
+  sel.innerHTML = m.opts.map(u=>`<option value="${u}">${u}</option>`).join('');
+  sel.value = m.def;
+  document.getElementById('val'+n).value = m.defVal;
+  conv(n);
+}
+function onProp(n){ fillUnits(n, document.getElementById('prop'+n).value); }
+function conv(n){
+  const prop = document.getElementById('prop'+n).value;
+  const unit = document.getElementById('unit'+n).value;
+  const val  = parseFloat(document.getElementById('val'+n).value);
+  const m    = UM[prop];
+  const hint = document.getElementById('hint'+n);
+  if(isNaN(val)){ hint.textContent=''; hint.className='conv-hint'; return; }
+  if(unit===m.label){ hint.textContent='(SI native)'; hint.className='conv-hint'; return; }
+  const si = m.si[unit](val);
+  hint.textContent = '→ ' + fmtS(si) + ' ' + m.label;
+  hint.className = 'conv-hint live';
+}
+function getSI(n){
+  const prop=document.getElementById('prop'+n).value;
+  const unit=document.getElementById('unit'+n).value;
+  return UM[prop].si[unit](parseFloat(document.getElementById('val'+n).value));
+}
+function refHint(which){
+  if(which==='T'){
+    const v=parseFloat(document.getElementById('T0val').value);
+    const u=document.getElementById('T0unit').value;
+    const el=document.getElementById('T0hint');
+    el.textContent = isNaN(v)?'':'≡ '+fmtS(RT[u](v))+' K';
+  } else {
+    const v=parseFloat(document.getElementById('P0val').value);
+    const u=document.getElementById('P0unit').value;
+    const el=document.getElementById('P0hint');
+    el.textContent = isNaN(v)?'':'≡ '+fmtS(RP[u](v))+' Pa';
+  }
+}
+function getRefSI(){
+  return {
+    T0: RT[document.getElementById('T0unit').value](parseFloat(document.getElementById('T0val').value)),
+    P0: RP[document.getElementById('P0unit').value](parseFloat(document.getElementById('P0val').value)),
+  };
+}
+
+/* ══════════════════════════════════
+   THEME
+══════════════════════════════════ */
+const htmlEl = document.documentElement;
+function setTheme(t){
+  htmlEl.setAttribute('data-theme',t);
+  document.getElementById('btnDark').classList.toggle('active',  t==='dark');
+  document.getElementById('btnLight').classList.toggle('active', t==='light');
+  localStorage.setItem('fc-theme',t);
+}
+document.getElementById('btnDark').addEventListener('click',  ()=>setTheme('dark'));
+document.getElementById('btnLight').addEventListener('click', ()=>setTheme('light'));
+setTheme(localStorage.getItem('fc-theme')||'dark');
+
+/* ══════════════════════════════════
+   FLUIDS
+══════════════════════════════════ */
+let allFluids=[], currentFluid=null;
+
+async function loadFluids(){
+  const r = await fetch('/api/fluids');
+  allFluids = (await r.json()).fluids;
+  const sel = document.getElementById('fluidSel');
+  sel.innerHTML = allFluids.map(f=>`<option value="${f}">${f}</option>`).join('');
+  sel.value = allFluids.includes('Water') ? 'Water' : allFluids[0];
+  currentFluid = sel.value;
+  document.getElementById('calcBtn').disabled = false;
+}
+document.getElementById('fluidSel').addEventListener('change', function(){
+  currentFluid = this.value;
+  document.getElementById('resultsSec').classList.remove('visible');
+  document.getElementById('errBox').style.display='none';
+  if(document.getElementById('genBd').classList.contains('open')) loadGen(currentFluid);
+});
+
+/* ══════════════════════════════════
+   AUTO UNIT CONVERSION HELPERS
+══════════════════════════════════ */
+
+/**
+ * Smart pressure: always pick the most readable unit.
+ * Thresholds (absolute Pa):
+ *   ≥ 0.5 MPa  → MPa  (e.g. 1 MPa, 22.06 MPa)
+ *   ≥ 200 Pa   → bar  (e.g. 1.013 bar)
+ *   < 200 Pa   → Pa   (e.g. triple-point water: 611 Pa)
+ */
+function autoP(pa) {
+  const a = Math.abs(pa);
+  if (a >= 0.5e6)  return { v: pa / 1e6,  u: 'MPa'  };
+  if (a >= 200)    return { v: pa / 1e5,  u: 'bar'  };
+  return               { v: pa,          u: 'Pa'   };
+}
+
+/**
+ * Smart viscosity: μPa·s for gases, mPa·s for liquids.
+ * Threshold: if mPa·s value < 0.05, use μPa·s instead.
+ */
+function autoMu(pas) {
+  const mPa = pas * 1e3;
+  if (mPa < 0.05) return { v: pas * 1e6, u: 'μPa·s' };
+  return { v: mPa, u: 'mPa·s' };
+}
+
+/* Fixed display units for state results */
+const RESULT_ROWS = [
+  // ── Thermodynamic State ──
+  // { group: 'Thermodynamic State' },
+  { lbl:'Pressure, P',       key:'P',   conv: v => autoP(v),                       hi:'hi-blue'    },
+  { lbl:'Temperature, T',    key:'T',   conv: v => ({v: v - 273.15, u:'°C'}),      hi:'hi-blue'    },
+  { lbl:'Density, ρ',        key:'rho', conv: v => ({v, u:'kg/m³'})                              },
+  { lbl:'Vapor Quality, Q',  key:'Q',   conv: v => v == null ? null : ({v, u:'—'})               },
+
+  // ── Energy Properties ──
+  // { group: 'Energy Properties' },
+  { lbl:'Enthalpy, h',       key:'h',   conv: v => ({v: v/1e3, u:'kJ/kg'})                      },
+  { lbl:'Int. Energy, u',    key:'u',   conv: v => ({v: v/1e3, u:'kJ/kg'})                      },
+  { lbl:'Entropy, s',        key:'s',   conv: v => ({v: v/1e3, u:'kJ/(kg·K)'})                  },
+
+  // ── Transport Properties ──
+  // { group: 'Transport Properties' },
+  { lbl:'Isobaric Cp',       key:'Cp',  conv: v => ({v: v/1e3, u:'kJ/(kg·K)'})                  },
+  { lbl:'Isochoric Cv',      key:'Cv',  conv: v => ({v: v/1e3, u:'kJ/(kg·K)'})                  },
+  { lbl:'Therm. Cond., λ',   key:'k',   conv: v => ({v, u:'W/(m·K)'})                           },
+  { lbl:'Viscosity, μ',      key:'mu',  conv: v => autoMu(v)                                     },
+  { lbl:'Prandtl No., Pr',   key:'Pr',  conv: v => ({v, u:'—'})                                 },
+
+  // ── Exergy ──
+  // { group: 'Exergy' },
+  { lbl:'Flow Exergy, e',    key:'e',   conv: v => ({v: v/1e3, u:'kJ/kg'}),        hi:'hi-emerald', note:'h − h₀ − T₀(s − s₀)' },
+];
+
+/* Fixed display units for fluid constants */
+const CONST_ROWS = [
+  { group: 'Critical Point' },
+  { lbl:'Critical Temp., Tc',   key:'T_crit',          conv: v => ({v: v - 273.15,  u:'°C'})        },
+  { lbl:'Critical Press., Pc',  key:'P_crit',          conv: v => autoP(v)                           },
+  { lbl:'Critical Density, ρc', key:'rho_crit',        conv: v => ({v, u:'kg/m³'})                  },
+  { group: 'Triple Point' },
+  { lbl:'Triple Temp., Ttp',    key:'T_triple',        conv: v => ({v: v - 273.15,  u:'°C'})        },
+  { lbl:'Triple Press., Ptp',   key:'P_triple',        conv: v => autoP(v)                           },
+  { group: 'Valid Range' },
+  { lbl:'Min. Temperature',     key:'T_min',           conv: v => ({v: v - 273.15,  u:'°C'})        },
+  { lbl:'Max. Temperature',     key:'T_max',           conv: v => ({v: v - 273.15,  u:'°C'})        },
+  { lbl:'Max. Pressure',        key:'P_max',           conv: v => autoP(v)                           },
+  { group: 'Molecular' },
+  { lbl:'Molar Mass, M',        key:'M',               conv: v => ({v: v * 1e3,     u:'g/mol'})     },
+  { lbl:'Gas Constant, R',      key:'R_specific',      conv: v => ({v, u:'J/(kg·K)'})               },
+  { lbl:'Acentric Factor, ω',   key:'acentric_factor', conv: v => ({v, u:'—'})                      },
+];
+
+/* ══════════════════════════════════
+   CALCULATE
+══════════════════════════════════ */
+async function calculate(){
+  if(!currentFluid) return;
+  document.getElementById('errBox').style.display='none';
+  const btn=document.getElementById('calcBtn');
+  btn.disabled=true; btn.textContent='Calculating…';
+
+  const ref = getRefSI();
+  const body={
+    fluid:currentFluid,
+    prop1:document.getElementById('prop1').value, val1:getSI(1),
+    prop2:document.getElementById('prop2').value, val2:getSI(2),
+    T_0:ref.T0, P_0:ref.P0,
+    ref:document.getElementById('refBasis').value,
+  };
+  try{
+    const r=await fetch('/api/state-props',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+    });
+    if(!r.ok){const e=await r.json();throw new Error(e.detail||'Calculation failed');}
+    renderResults(await r.json());
+    document.getElementById('resultsSec').classList.add('visible');
+  }catch(e){
+    const eb=document.getElementById('errBox');
+    eb.textContent='⚠  '+e.message; eb.style.display='block';
+    document.getElementById('resultsSec').classList.remove('visible');
+  } finally {
+    btn.disabled=false;
+    btn.innerHTML=`<svg viewBox="0 0 14 14" width="14" height="14" fill="none" stroke="white" stroke-width="1.8"><polygon points="3,2 11,7 3,12"/></svg> Calculate State`;
+  }
+}
+document.getElementById('calcBtn').addEventListener('click', calculate);
+['val1','val2'].forEach(id=>
+  document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter') calculate(); })
+);
+
+/* ══════════════════════════════════
+   RENDER RESULTS — property table
+══════════════════════════════════ */
+function phaseInfo(Q){
+  if(Q==null||Q<0) return {label:'Compressed Liquid', color:'#38bdf8', bg:'rgba(56,189,248,0.12)'};
+  if(Q>1)          return {label:'Superheated Vapor',  color:'#f97316', bg:'rgba(249,115,22,0.12)'};
+  if(Q===0)        return {label:'Saturated Liquid',   color:'#10d9a0', bg:'rgba(16,217,160,0.12)'};
+  if(Q===1)        return {label:'Saturated Vapor',    color:'#a78bfa', bg:'rgba(167,139,250,0.12)'};
+  return           {label:`Two-Phase  (x=${Q.toFixed(3)})`, color:'#fbbf24', bg:'rgba(251,191,36,0.12)'};
+}
+
+function renderResults(d){
+  /* Phase badge */
+  const ph = phaseInfo(d.Q);
+  const badge = document.getElementById('phaseBadge');
+  badge.style.background = ph.bg;
+  badge.style.border = `1px solid color-mix(in srgb, ${ph.color} 35%, transparent)`;
+  badge.style.color  = ph.color;
+  document.getElementById('phaseDot').style.background  = ph.color;
+  document.getElementById('phaseDot').style.boxShadow   = `0 0 8px ${ph.color}`;
+  document.getElementById('phaseLabel').textContent      = ph.label;
+
+  /* Build table */
+  document.getElementById('propTableWrap').innerHTML = buildTable(RESULT_ROWS, d);
+}
+
+/* ══════════════════════════════════
+   BUILD TABLE (shared by results & constants)
+══════════════════════════════════ */
+function buildTable(schema, data) {
+  let html = `<div class="prop-wrap">
+    <div class="prop-header">
+      <span>Property</span><span>Value</span><span>Unit</span>
+    </div>`;
+
+  schema.forEach(row => {
+    /* Group divider header */
+    if (row.group) {
+      html += `<div style="padding:8px 16px 3px;font-size:9px;font-weight:600;
+        letter-spacing:0.13em;text-transform:uppercase;color:var(--text3);
+        border-bottom:1px solid var(--border);margin-top:2px">${row.group}</div>`;
+      return;
+    }
+
+    const raw = data[row.key];
+    let valStr, unitStr;
+
+    if (raw == null) {
+      valStr  = `<span class="prop-val na">N/A</span>`;
+      unitStr = '—';
+    } else {
+      const converted = row.conv(raw);
+      if (converted == null) {
+        /* e.g. Q == null passed through conv */
+        valStr  = `<span class="prop-val na">N/A</span>`;
+        unitStr = '—';
+      } else {
+        valStr  = `<span class="prop-val">${fmt(converted.v)}</span>`;
+        unitStr = converted.u;
+      }
+    }
+
+    const hiClass = row.hi ? ' ' + row.hi : '';
+    const note    = row.note ? `<span style="font-size:9px;color:var(--text3);opacity:0.7;margin-left:4px;font-style:italic">${row.note}</span>` : '';
+
+    html += `<div class="prop-row${hiClass}">
+      <div class="prop-name">${row.lbl}${note}</div>
+      ${valStr}
+      <div class="prop-unit">${unitStr}</div>
+    </div>`;
+  });
+
+  html += '</div>';
+  return html;
+}
+
+/* ══════════════════════════════════
+   FLUID CONSTANTS (collapsible)
+══════════════════════════════════ */
+function toggleGen(){
+  const bd   = document.getElementById('genBd');
+  const chev = document.getElementById('chevron');
+  const open = !bd.classList.contains('open');
+  bd.classList.toggle('open', open);
+  chev.classList.toggle('open', open);
+  if(open && currentFluid) loadGen(currentFluid);
+}
+
+async function loadGen(f){
+  /* Skeleton rows */
+  const skRows = CONST_ROWS.filter(r => !r.group).length;
+  let skelHtml = `<div class="prop-wrap">
+    <div class="prop-header"><span>Property</span><span>Value</span><span>Unit</span></div>`;
+  for(let i=0;i<skRows;i++){
+    skelHtml += `<div class="prop-row">
+      <div class="prop-name"><span class="sk" style="width:${70+Math.random()*40}px;height:10px"></span></div>
+      <span class="prop-val"><span class="sk" style="width:55px;height:10px"></span></span>
+      <div class="prop-unit"><span class="sk" style="width:28px;height:9px"></span></div>
+    </div>`;
+  }
+  skelHtml += '</div>';
+  document.getElementById('constTableWrap').innerHTML = skelHtml;
+
+  try{
+    const r=await fetch('/api/fluid-props/'+encodeURIComponent(f));
+    if(!r.ok) throw new Error();
+    const d=await r.json();
+    document.getElementById('constTableWrap').innerHTML = buildTable(CONST_ROWS, d);
+  }catch{
+    document.getElementById('constTableWrap').innerHTML =
+      `<div style="padding:16px;text-align:center;color:var(--rose);font-size:11px">
+         Failed to load fluid constants
+       </div>`;
+  }
+}
+
+/* ══════════════════════════════════
+   UTILS
+══════════════════════════════════ */
+function fmt(v){
+  if(v==null) return 'N/A';
+  const a = Math.abs(v);
+  if(a===0) return '0';
+  if(a >= 1e7 || (a < 0.0001 && a > 0)) return v.toExponential(4);
+  if(a >= 1000) return v.toLocaleString('en-US',{maximumFractionDigits:3});
+  if(a >= 10)   return parseFloat(v.toPrecision(6)).toString();
+  return parseFloat(v.toPrecision(5)).toString();
+}
+function fmtS(v){
+  const a=Math.abs(v);
+  if(a===0) return '0';
+  if(a>=1e5||(a<0.01&&a>0)) return v.toExponential(3);
+  return parseFloat(v.toPrecision(5)).toString();
+}
+
+/* ══════════════════════════════════
+   INIT
+══════════════════════════════════ */
+fillUnits(1,'T');
+fillUnits(2,'P');
+refHint('T'); refHint('P');
+loadFluids();
+</script>
+</body>
+</html>

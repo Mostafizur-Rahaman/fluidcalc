@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FluidCalc — Thermodynamic Properties</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ══ TOKENS ══════════════════════════════════════════════ */
+:root{
+  --mono:'JetBrains Mono',monospace;
+  --display:'Syne',sans-serif;
+  --body:'DM Sans',sans-serif;
+  --r:8px; --r-lg:14px;
+  --tr:.2s cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"]{
+  --bg:#0d0f14;        --bg2:#13161d;        --bg3:#1a1e28;
+  --surface:#1e2230;   --border:#2c3247;     --border-hi:#404a66;
+  --accent:#5b8dee;    --accent-lo:rgba(91,141,238,.11);
+  --green:#34d17a;     --green-lo:rgba(52,209,122,.09);
+  --amber:#f5a623;     --red:#ff5b5b;
+  --text:#d4daea;      --text2:#7e8ca8;      --text3:#454f66;
+  --hbg:rgba(13,15,20,.9);
+  --row-alt:rgba(255,255,255,.022);
+  --row-hover:rgba(91,141,238,.09);
+  --thead-bg:#141720;
+  --glow:0 0 20px rgba(91,141,238,.28);
+  --sh:0 4px 24px rgba(0,0,0,.5);
+  --sh-sm:0 2px 8px rgba(0,0,0,.35);
+}
+[data-theme="light"]{
+  --bg:#f0f2f7;        --bg2:#e8eaf2;        --bg3:#dfe2ef;
+  --surface:#fff;      --border:#d0d5e8;     --border-hi:#a8b2d8;
+  --accent:#3a6be8;    --accent-lo:rgba(58,107,232,.08);
+  --green:#17a85a;     --green-lo:rgba(23,168,90,.08);
+  --amber:#d48c0a;     --red:#e03333;
+  --text:#1e2440;      --text2:#5a6480;      --text3:#9aa0b8;
+  --hbg:rgba(240,242,247,.92);
+  --row-alt:rgba(0,0,0,.025);
+  --row-hover:rgba(58,107,232,.07);
+  --thead-bg:#eceef5;
+  --glow:0 0 20px rgba(58,107,232,.18);
+  --sh:0 4px 24px rgba(100,120,180,.14);
+  --sh-sm:0 2px 8px rgba(100,120,180,.1);
+}
+
+/* ══ BASE ════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--body);
+  min-height:100vh;overflow-x:hidden;
+  transition:background var(--tr),color var(--tr);
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+
+/* ══ HEADER ══════════════════════════════════════════════ */
+header{
+  position:sticky;top:0;z-index:200;height:56px;
+  background:var(--hbg);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 1.25rem;gap:1rem;
+  transition:background var(--tr),border-color var(--tr);
+}
+.logo{display:flex;align-items:center;gap:.6rem;cursor:default;user-select:none}
+.logo-hex{
+  width:32px;height:32px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),var(--green));
+  clip-path:polygon(50% 0%,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);
+  display:grid;place-items:center;
+  font-family:var(--display);font-size:.7rem;font-weight:800;color:#fff;
+  transition:transform .7s ease;
+}
+.logo:hover .logo-hex{transform:rotate(120deg)}
+.logo-name{
+  font-family:var(--display);font-size:1.18rem;font-weight:800;
+  color:var(--text);letter-spacing:-.01em;
+}
+.logo-name em{color:var(--accent);font-style:normal}
+.hbadge{
+  font-family:var(--mono);font-size:.58rem;color:var(--text2);
+  border:1px solid var(--border);padding:2px 9px;border-radius:20px;
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.hright{margin-left:auto;display:flex;align-items:center}
+
+/* theme pill */
+.tpill{
+  display:flex;background:var(--bg3);border:1px solid var(--border);
+  border-radius:30px;padding:3px;
+  transition:border-color var(--tr),box-shadow var(--tr);
+}
+.tpill:hover{border-color:var(--accent);box-shadow:var(--glow)}
+.topt{
+  display:flex;align-items:center;gap:4px;
+  padding:4px 12px;border-radius:24px;
+  font-family:var(--display);font-size:.63rem;font-weight:700;
+  letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text3);cursor:pointer;transition:all var(--tr);user-select:none;
+}
+.topt svg{width:11px;height:11px;flex-shrink:0}
+.topt.active{background:var(--surface);color:var(--accent);box-shadow:var(--sh-sm)}
+
+/* ══ LAYOUT ══════════════════════════════════════════════ */
+.app{display:grid;grid-template-columns:210px 1fr;height:calc(100vh - 56px)}
+@media(max-width:820px){.app{grid-template-columns:1fr;height:auto}}
+
+/* ══ SIDEBAR ═════════════════════════════════════════════ */
+.sidebar{
+  background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:background var(--tr),border-color var(--tr);
+}
+.sb-top{padding:.85rem 1rem .65rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-lbl{
+  font-family:var(--display);font-size:.55rem;font-weight:800;
+  letter-spacing:.2em;color:var(--text3);text-transform:uppercase;margin-bottom:.5rem;
+}
+.s-wrap{position:relative}
+.s-wrap svg{
+  position:absolute;left:8px;top:50%;transform:translateY(-50%);
+  width:12px;height:12px;color:var(--text3);pointer-events:none;
+}
+#fluidSearch{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  color:var(--text);font-family:var(--mono);font-size:.73rem;
+  padding:5px 7px 5px 26px;border-radius:var(--r);outline:none;
+  transition:border-color var(--tr),box-shadow var(--tr);
+}
+#fluidSearch:focus{border-color:var(--accent);box-shadow:var(--glow)}
+#fluidSearch::placeholder{color:var(--text3)}
+.fcount{font-family:var(--mono);font-size:.58rem;color:var(--text3);margin-top:.35rem;text-align:right}
+.flist{flex:1;overflow-y:auto;padding:.25rem 0}
+.fitem{
+  padding:5px 1rem;font-family:var(--mono);font-size:.73rem;
+  color:var(--text2);cursor:pointer;border-left:2px solid transparent;
+  display:flex;align-items:center;gap:.4rem;
+  transition:all .12s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.fitem:hover{background:var(--bg3);color:var(--text);border-left-color:var(--border-hi)}
+.fitem.active{background:var(--accent-lo);color:var(--accent);border-left-color:var(--accent)}
+.fdot{width:5px;height:5px;border-radius:50%;background:var(--border-hi);flex-shrink:0;transition:background .12s}
+.fitem.active .fdot{background:var(--accent)}
+
+/* ══ MAIN ════════════════════════════════════════════════ */
+.main{overflow-y:auto;background:var(--bg);transition:background var(--tr)}
+.main-inner{padding:1rem;display:flex;flex-direction:column;gap:1rem}
+
+.panels-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+@media(max-width:1020px){.panels-row{grid-template-columns:1fr}}
+
+/* ══ PANEL ═══════════════════════════════════════════════ */
+.panel{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  overflow:hidden;box-shadow:var(--sh-sm);
+  transition:background var(--tr),border-color var(--tr),box-shadow var(--tr);
+}
+.panel:hover{border-color:var(--border-hi);box-shadow:var(--sh)}
+
+.phead{
+  padding:.75rem 1rem;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.ptitle{
+  display:flex;align-items:center;gap:.5rem;
+  font-family:var(--display);font-size:.65rem;font-weight:800;
+  letter-spacing:.15em;color:var(--text2);text-transform:uppercase;
+}
+.led{width:7px;height:7px;border-radius:50%;background:var(--border-hi);transition:all .3s;flex-shrink:0}
+.led.on{background:var(--green);box-shadow:0 0 7px var(--green)}
+.led.loading{background:var(--amber);box-shadow:0 0 7px var(--amber);animation:blink .7s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.ftag{
+  font-family:var(--mono);font-size:.62rem;color:var(--accent);
+  background:var(--accent-lo);border:1px solid rgba(91,141,238,.2);
+  padding:2px 9px;border-radius:20px;
+}
+
+/* ══ PLACEHOLDER ═════════════════════════════════════════ */
+.placeholder{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2.5rem 1.5rem;text-align:center;gap:.65rem;min-height:160px;
+}
+.ph-icon{
+  width:42px;height:42px;border-radius:10px;background:var(--bg3);
+  border:1px solid var(--border);display:grid;place-items:center;font-size:1.3rem;
+}
+.placeholder h4{font-family:var(--display);font-size:.8rem;font-weight:800;color:var(--text2)}
+.placeholder p{font-size:.75rem;line-height:1.7;max-width:220px;color:var(--text3)}
+.placeholder code{
+  font-family:var(--mono);font-size:.66rem;color:var(--accent);
+  background:var(--accent-lo);padding:1px 5px;border-radius:4px;
+}
+
+/* ══ TABLE ═══════════════════════════════════════════════ */
+.tbl-wrap{overflow-x:auto}
+table{
+  width:100%;border-collapse:collapse;font-size:.82rem;
+}
+thead tr{background:var(--thead-bg)}
+thead th{
+  padding:9px 14px;
+  font-family:var(--display);font-size:.57rem;font-weight:800;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--text3);
+  border-bottom:2px solid var(--border);
+  white-space:nowrap;
+}
+thead th.r{text-align:right}
+
+tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:nth-child(even){background:var(--row-alt)}
+tbody tr:hover{background:var(--row-hover)}
+
+td{padding:8px 14px;vertical-align:middle}
+
+/* col — property name */
+.c-name{
+  font-family:var(--body);font-size:.8rem;color:var(--text);font-weight:400;
+}
+.c-name .sym{
+  font-family:var(--mono);font-size:.74rem;color:var(--text2);font-weight:400;
+  margin-left:.15rem;
+}
+
+/* col — value */
+.c-val{
+  font-family:var(--mono);font-size:.84rem;font-weight:500;
+  color:var(--accent);text-align:right;white-space:nowrap;
+}
+.c-val.na{color:var(--text3);font-size:.74rem}
+
+/* col — unit */
+.c-unit{
+  font-family:var(--body);font-size:.72rem;color:var(--text2);
+  text-align:right;white-space:nowrap;width:88px;padding-left:6px;
+}
+
+/* ══ STATE FORM ══════════════════════════════════════════ */
+.sform{
+  padding:.8rem;display:grid;grid-template-columns:1fr 1fr;gap:.5rem;
+  border-bottom:1px solid var(--border);background:var(--bg2);
+}
+.fg{display:flex;flex-direction:column;gap:.22rem}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;grid-column:1/-1}
+.flbl{font-family:var(--mono);font-size:.54rem;color:var(--text2);text-transform:uppercase;letter-spacing:.1em}
+.fctl{
+  background:var(--surface);border:1px solid var(--border);color:var(--text);
+  font-family:var(--mono);font-size:.76rem;padding:6px 8px;border-radius:var(--r);
+  outline:none;width:100%;transition:border-color var(--tr),box-shadow var(--tr);
+}
+.fctl:focus{border-color:var(--accent);box-shadow:var(--glow)}
+select.fctl{cursor:pointer}
+select.fctl option{background:var(--surface);color:var(--text)}
+.cbtn{
+  grid-column:1/-1;
+  background:linear-gradient(135deg,var(--accent),#7ca6ff);
+  border:none;color:#fff;
+  font-family:var(--display);font-size:.72rem;font-weight:800;
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:9px 20px;border-radius:var(--r);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:.45rem;
+  box-shadow:0 2px 14px rgba(91,141,238,.35);transition:all .18s;
+}
+.cbtn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 22px rgba(91,141,238,.5);filter:brightness(1.08)}
+.cbtn:disabled{opacity:.35;cursor:not-allowed}
+.cbtn:active:not(:disabled){transform:translateY(0)}
+
+/* ══ EXERGY BANNER ═══════════════════════════════════════ */
+.exergy{
+  margin:.75rem .75rem .15rem;padding:.75rem 1rem;
+  background:linear-gradient(135deg,var(--green-lo),var(--accent-lo));
+  border:1px solid rgba(52,209,122,.22);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;
+}
+.ex-lbl{font-family:var(--mono);font-size:.52rem;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.16rem}
+.ex-val{font-family:var(--mono);font-size:1.1rem;color:var(--green);font-weight:500}
+.ex-unit{font-size:.56rem;color:var(--text2);margin-left:.15rem;font-family:var(--body)}
+.ex-formula{font-family:var(--mono);font-size:.6rem;color:var(--text3)}
+
+/* ══ ERROR ════════════════════════════════════════════════ */
+.err{
+  margin:.7rem;padding:.55rem .9rem;
+  background:rgba(255,91,91,.07);border:1px solid rgba(255,91,91,.22);
+  border-radius:var(--r);font-family:var(--mono);font-size:.7rem;color:var(--red);display:none;
+}
+
+/* ══ SKELETON ════════════════════════════════════════════ */
+.sk{
+  display:inline-block;border-radius:4px;
+  background:linear-gradient(90deg,var(--bg3) 25%,var(--bg2) 50%,var(--bg3) 75%);
+  background-size:200% 100%;animation:shim 1.3s infinite;
+}
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════ */
+@media(max-width:820px){
+  .sidebar{border-right:none;border-bottom:1px solid var(--border);max-height:220px}
+  .flist{max-height:160px}
+  header{padding:0 .9rem}
+  .hbadge{display:none}
+}
+@media(max-width:540px){
+  .sform{grid-template-columns:1fr}
+  .fg-row{grid-template-columns:1fr}
+  .cbtn{grid-column:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-hex">Fc</div>
+    <span class="logo-name">Fluid<em>Calc</em></span>
+  </div>
+  <span class="hbadge">CoolProp · 124 Fluids</span>
+  <div class="hright">
+    <div class="tpill">
+      <div class="topt active" id="btnDark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/>
+        </svg>Dark
+      </div>
+      <div class="topt" id="btnLight">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>Light
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- APP -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-top">
+      <div class="sb-lbl">Fluid Library</div>
+      <div class="s-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input id="fluidSearch" type="text" placeholder="Search fluid…" autocomplete="off"/>
+      </div>
+      <div class="fcount" id="fcount">Loading…</div>
+    </div>
+    <div class="flist" id="flist"></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="main-inner">
+      <div class="panels-row">
+
+        <!-- GENERAL PROPERTIES -->
+        <div class="panel">
+          <div class="phead">
+            <div class="ptitle"><span class="led" id="genLed"></span>General Properties</div>
+            <span class="ftag" id="genTag" style="display:none"></span>
+          </div>
+          <div id="genBody">
+            <div class="placeholder">
+              <div class="ph-icon">⬡</div>
+              <h4>Select a Fluid</h4>
+              <p>Critical point, triple point, limits, and physical constants will appear here.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- STATE PROPERTIES -->
+        <div class="panel">
+          <div class="phead">
+            <div class="ptitle"><span class="led" id="stateLed"></span>State Properties</div>
+            <span class="ftag" id="stateTag" style="display:none"></span>
+          </div>
+
+          <div class="sform">
+            <div class="fg">
+              <label class="flbl">Property 1</label>
+              <select id="prop1" class="fctl">
+                <option value="T">T — Temperature [K]</option>
+                <option value="P">P — Pressure [Pa]</option>
+                <option value="H">H — Enthalpy [J/kg]</option>
+                <option value="S">S — Entropy [J/kg·K]</option>
+                <option value="Q">Q — Vapor Quality</option>
+                <option value="D">D — Density [kg/m³]</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="flbl">Value 1</label>
+              <input id="val1" type="number" class="fctl" value="300" placeholder="e.g. 300"/>
+            </div>
+            <div class="fg">
+              <label class="flbl">Property 2</label>
+              <select id="prop2" class="fctl">
+                <option value="P">P — Pressure [Pa]</option>
+                <option value="T">T — Temperature [K]</option>
+                <option value="H">H — Enthalpy [J/kg]</option>
+                <option value="S">S — Entropy [J/kg·K]</option>
+                <option value="Q">Q — Vapor Quality</option>
+                <option value="D">D — Density [kg/m³]</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="flbl">Value 2</label>
+              <input id="val2" type="number" class="fctl" value="101325" placeholder="e.g. 101325"/>
+            </div>
+            <div class="fg-row">
+              <div class="fg">
+                <label class="flbl">T₀ Reference [K]</label>
+                <input id="T0" type="number" class="fctl" value="288.15"/>
+              </div>
+              <div class="fg">
+                <label class="flbl">P₀ Reference [Pa]</label>
+                <input id="P0" type="number" class="fctl" value="101325"/>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="flbl">h/s Reference</label>
+              <select id="refState" class="fctl">
+                <option value="DEF">DEF — Default</option>
+                <option value="IIR">IIR</option>
+                <option value="ASHRAE">ASHRAE</option>
+                <option value="NBP">NBP</option>
+              </select>
+            </div>
+            <div class="fg" style="justify-content:flex-end">
+              <label class="flbl" style="opacity:0">_</label>
+              <button class="cbtn" id="calcBtn" disabled>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Calculate
+              </button>
+            </div>
+          </div>
+
+          <div class="err" id="stateErr"></div>
+
+          <div id="stateBody">
+            <div class="placeholder">
+              <div class="ph-icon">⚛</div>
+              <h4>Configure &amp; Calculate</h4>
+              <p>Select a fluid, enter two independent state inputs, then click <code>Calculate</code>.</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /panels-row -->
+    </div>
+  </main>
+</div>
+
+<script>
+/* ── State ── */
+let currentFluid = null, allFluids = [];
+
+/* ── Theme ── */
+const html = document.documentElement;
+function setTheme(t){
+  html.setAttribute('data-theme', t);
+  document.getElementById('btnDark').classList.toggle('active',  t==='dark');
+  document.getElementById('btnLight').classList.toggle('active', t==='light');
+  localStorage.setItem('fc-theme', t);
+}
+document.getElementById('btnDark').addEventListener('click',  () => setTheme('dark'));
+document.getElementById('btnLight').addEventListener('click', () => setTheme('light'));
+setTheme(localStorage.getItem('fc-theme') || 'dark');
+
+/* ── Fluids ── */
+async function loadFluids(){
+  const r = await fetch('/api/fluids');
+  allFluids = (await r.json()).fluids;
+  renderList(allFluids);
+}
+function renderList(list){
+  const el = document.getElementById('flist');
+  document.getElementById('fcount').textContent = list.length + ' fluids';
+  el.innerHTML = '';
+  list.forEach(f => {
+    const d = document.createElement('div');
+    d.className = 'fitem' + (f === currentFluid ? ' active' : '');
+    d.innerHTML = `<span class="fdot"></span>${f}`;
+    d.onclick = () => selectFluid(f);
+    el.appendChild(d);
+  });
+}
+document.getElementById('fluidSearch').addEventListener('input', function(){
+  renderList(allFluids.filter(f => f.toLowerCase().includes(this.value.toLowerCase())));
+});
+
+/* ── Select fluid ── */
+async function selectFluid(f){
+  currentFluid = f;
+  document.getElementById('calcBtn').disabled = false;
+  renderList(allFluids.filter(x => x.toLowerCase().includes(
+    document.getElementById('fluidSearch').value.toLowerCase()
+  )));
+
+  led('genLed','loading'); hide('genTag');
+  document.getElementById('genBody').innerHTML = skelTable(11);
+
+  try{
+    const r = await fetch('/api/fluid-props/' + encodeURIComponent(f));
+    if(!r.ok) throw new Error(await r.text());
+    renderGeneral(await r.json());
+    led('genLed','on'); showTag('genTag', f);
+  } catch(e){
+    document.getElementById('genBody').innerHTML =
+      `<div class="err" style="display:block;margin:.7rem">⚠ ${e.message}</div>`;
+    led('genLed','');
+  }
+
+  document.getElementById('stateBody').innerHTML = `
+    <div class="placeholder"><div class="ph-icon">⚛</div>
+    <h4>${f}</h4><p>Enter state inputs and click <code>Calculate</code>.</p></div>`;
+  led('stateLed',''); hide('stateTag');
+  document.getElementById('stateErr').style.display = 'none';
+}
+
+/* ── Build table HTML ── */
+function buildTable(rows){
+  let h = `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Property</th>
+      <th class="r">Value</th>
+      <th class="r">Unit</th>
+    </tr></thead><tbody>`;
+  rows.forEach(({name, sym, value, unit}) => {
+    const valCell = (value == null)
+      ? `<td class="c-val na">N/A</td>`
+      : `<td class="c-val">${fmt(value)}</td>`;
+    h += `<tr>
+      <td class="c-name">${name} <span class="sym">(${sym})</span></td>
+      ${valCell}
+      <td class="c-unit">${unit}</td>
+    </tr>`;
+  });
+  return h + '</tbody></table></div>';
+}
+
+/* ── General props ── */
+const GEN_ROWS = [
+  {name:'Critical Temperature', sym:'T\u2099',    k:'T_crit',          unit:'K'},
+  {name:'Critical Pressure',    sym:'P\u2099',    k:'P_crit',          unit:'Pa'},
+  {name:'Critical Density',     sym:'\u03c1\u2099',k:'rho_crit',       unit:'kg/m³'},
+  {name:'Triple Point Temperature', sym:'T\u209c\u209a', k:'T_triple', unit:'K'},
+  {name:'Triple Point Pressure',sym:'P\u209c\u209a',k:'P_triple',      unit:'Pa'},
+  {name:'Minimum Temperature',  sym:'T\u2098\u1d35\u207f',k:'T_min',  unit:'K'},
+  {name:'Maximum Temperature',  sym:'T\u2098\u1d43\u02e3',k:'T_max',  unit:'K'},
+  {name:'Maximum Pressure',     sym:'P\u2098\u1d43\u02e3',k:'P_max',  unit:'Pa'},
+  {name:'Molar Mass',           sym:'M',           k:'M',              unit:'kg/mol'},
+  {name:'Specific Gas Constant',sym:'R',           k:'R_specific',     unit:'J/kg·K'},
+  {name:'Acentric Factor',      sym:'\u03c9',      k:'acentric_factor',unit:'—'},
+];
+
+function renderGeneral(data){
+  const rows = GEN_ROWS.map(r => ({...r, value: data[r.k]}));
+  document.getElementById('genBody').innerHTML = buildTable(rows);
+}
+
+/* ── State calc ── */
+document.getElementById('calcBtn').addEventListener('click', calcState);
+['val1','val2','T0','P0'].forEach(id =>
+  document.getElementById(id).addEventListener('keydown', e => { if(e.key==='Enter') calcState(); })
+);
+
+async function calcState(){
+  if(!currentFluid) return;
+  led('stateLed','loading');
+  document.getElementById('stateErr').style.display = 'none';
+  document.getElementById('stateBody').innerHTML = skelTable(13);
+
+  const body = {
+    fluid: currentFluid,
+    prop1: document.getElementById('prop1').value,
+    val1:  document.getElementById('val1').value,
+    prop2: document.getElementById('prop2').value,
+    val2:  document.getElementById('val2').value,
+    T_0:   document.getElementById('T0').value,
+    P_0:   document.getElementById('P0').value,
+    ref:   document.getElementById('refState').value,
+  };
+  try{
+    const r = await fetch('/api/state-props',{
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    if(!r.ok){ const e = await r.json(); throw new Error(e.detail||'Error') }
+    renderState(await r.json());
+    led('stateLed','on'); showTag('stateTag', currentFluid);
+  } catch(e){
+    const eb = document.getElementById('stateErr');
+    eb.textContent = '⚠  ' + e.message; eb.style.display = 'block';
+    document.getElementById('stateBody').innerHTML = '';
+    led('stateLed','');
+  }
+}
+
+const STATE_ROWS = [
+  {name:'Pressure',                sym:'P',           k:'P',   unit:'Pa'},
+  {name:'Temperature',             sym:'T',           k:'T',   unit:'K'},
+  {name:'Vapor Quality',           sym:'x',           k:'Q',   unit:'—'},
+  {name:'Density',                 sym:'\u03c1',      k:'rho', unit:'kg/m³'},
+  {name:'Specific Internal Energy',sym:'u',           k:'u',   unit:'J/kg'},
+  {name:'Specific Enthalpy',       sym:'h',           k:'h',   unit:'J/kg'},
+  {name:'Specific Entropy',        sym:'s',           k:'s',   unit:'J/kg·K'},
+  {name:'Isobaric Heat Capacity',  sym:'c\u209a',     k:'Cp',  unit:'J/kg·K'},
+  {name:'Isochoric Heat Capacity', sym:'c\u1d65',     k:'Cv',  unit:'J/kg·K'},
+  {name:'Thermal Conductivity',    sym:'\u03bb',      k:'k',   unit:'W/m·K'},
+  {name:'Dynamic Viscosity',       sym:'\u03bc',      k:'mu',  unit:'Pa·s'},
+  {name:'Prandtl Number',          sym:'Pr',          k:'Pr',  unit:'—'},
+  {name:'Specific Flow Exergy',    sym:'e',           k:'e',   unit:'J/kg'},
+];
+
+function renderState(data){
+  const rows = STATE_ROWS.map(r => ({...r, value: data[r.k]}));
+  document.getElementById('stateBody').innerHTML = buildTable(rows);
+}
+
+/* ── Utils ── */
+function fmt(v){
+  if(v == null) return 'N/A';
+  const a = Math.abs(v);
+  if(a === 0) return '0';
+  if(a >= 1e6 || (a < 0.001 && a > 0)) return v.toExponential(4);
+  if(a >= 1e4) return v.toLocaleString('en-US', {maximumFractionDigits:2});
+  return parseFloat(v.toPrecision(6)).toString();
+}
+function led(id,s){ document.getElementById(id).className='led'+(s?' '+s:'') }
+function showTag(id,t){ const e=document.getElementById(id); e.textContent=t; e.style.display='' }
+function hide(id){ document.getElementById(id).style.display='none' }
+
+function skelTable(n){
+  let h = `<div class="tbl-wrap"><table>
+    <thead><tr><th>Property</th><th class="r">Value</th><th class="r">Unit</th></tr></thead><tbody>`;
+  const ws = [130,160,110,145,125,155,140,120,150,135,160,115,145];
+  for(let i=0;i<n;i++){
+    const w = ws[i % ws.length];
+    h += `<tr>
+      <td><span class="sk" style="width:${w}px;height:.7rem"></span></td>
+      <td style="text-align:right"><span class="sk" style="width:58px;height:.7rem"></span></td>
+      <td style="text-align:right"><span class="sk" style="width:34px;height:.7rem"></span></td>
+    </tr>`;
+  }
+  return h + '</tbody></table></div>';
+}
+
+loadFluids();
+</script>
+</body>
+</html>
