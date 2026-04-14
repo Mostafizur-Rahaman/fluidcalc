@@ -1,30 +1,21 @@
-# Virtual Environment
-.venv/
-venv/
-
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
-*.class
+*.pyo
+.Python
 
-# Environment variables
+# Envs
+.venv/
+venv/
+env/
 .env
+.env.*
 
-# Logs
-*.log
+# Downloads (never commit) 
+main.ipynb
 
-# OS files
+# Editor
 .DS_Store
-Thumbs.db
-
-# IDE / Editor
-.vscode/
 .idea/
-
-# Build files
-build/
-dist/
-*.egg-info/
-
-# Uvicorn
-*.pid
+.vscode/
+*.log
